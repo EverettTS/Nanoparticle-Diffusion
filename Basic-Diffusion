@@ -1,0 +1,36 @@
+%% Finite Difference Implicit Method: Fick's 2nd Law
+clear; clc; close('all');
+%% Parameters
+xi = 0; xf = 0.6; dx = 0.01; % x range and step size = dx [m]
+xL = 0.25; xU = 0.35; % initial value x lower and upper limits [m]
+ti = 0; tf = 0.05; dt = 4e-4; % t range and step size = dt [s]
+ci = 2; % initial concentration value [ng/L]
+cLU = 8; % initial concentration value within x lower and upper limits [ng/L]
+D = 1.5; % diffusivity or diffusion coefficient [m^2/s]
+%% Calculations
+% Independent Variables: x and t
+    X = xi:dx:xf; nx = numel(X); T = ti:dt:tf; nt = numel(T);  % x and t vectors and their number of elements
+    [x,t] = meshgrid(X,T); x = x'; t = t'; % x and t matrices
+% Dependent Variable: c
+    c = ones(nx,nt)*ci; % temporary c(x,t) matrix with rows: c(x) and columns: c(t)
+    % Initial values and Dirichlet boundary
+        I = find((X>=xL)&(X<=xU)); % index of lower and upper limits
+        c(I,1) = cLU; % c at t = 0 for lower and upper limits
+    % Matrix of Coefficients
+        muD = (dt/dx^2)*D;
+        M = diag([1 ones(1,nx-2)*(1+2*muD) -1])... % main diagonal
+            + diag([-1 ones(1,nx-2)*-muD],1)... % 1st superdiagonal
+            + diag([ones(1,nx-2)*-muD 1],-1); % 1st subdiagonal
+    % Vector of unknowns per time point
+        for j = 1:nt-1
+            K = [0; c(2:nx-1,j); 0]; % column vector of constants
+            U = M\K; % column vector of unknowns
+            c(:,j+1) = U; % concentration matrix
+        end
+%% Results
+    figure(2);
+    for j = 1:nt
+        plot(X,c(:,j)); xlabel('Distance [m]'); ylabel('Concentration [ng/L]');
+        title(['Concentration Versus Distance at Time = ' num2str(round(T(j),3)) ' s']) ; 
+        grid('on'); axis([xi xf -0.1*cLU 1.1*cLU]); drawnow; pause(0.01);
+    end
